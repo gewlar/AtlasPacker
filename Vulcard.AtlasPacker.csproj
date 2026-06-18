@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RollForward>Major</RollForward>
+    <AssemblyName>Vulcard.AtlasPacker</AssemblyName>
+    <RootNamespace>Vulcard.AtlasPacker</RootNamespace>
+    <!-- Fixed output path so MGCB can reference the DLL unconditionally
+         regardless of build configuration (Debug/Release). -->
+    <OutputPath>bin/pipeline/</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <!-- Copy NuGet dependencies to bin/pipeline/ so MGCB can load referenced assemblies. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- NuGet package — the DLL is shipped in tools/, not lib/, so it is not added as a
+         compile reference in consumer projects. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata -->
+  <PropertyGroup>
+    <PackageId>Vulcard.AtlasPacker</PackageId>
+    <!-- Version: pass at pack time with -p:Version=X.Y.Z -->
+    <Authors>Luca Schafroth</Authors>
+    <Description>MonoGame content pipeline extension that packs sprites into a texture atlas from a .atlaspack manifest. Supports glob patterns, per-sprite size/crop overrides, auto-trim, and optional power-of-two sizing.</Description>
+    <PackageTags>monogame;content-pipeline;atlas;sprite;texture-atlas;2d;game</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/gewlar/AtlasPacker</RepositoryUrl>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <!-- NU5128: expected — this package has no lib/ folder by design (it's a pipeline tool) -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.Content.Pipeline" Version="3.8.2.1105" />
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.2.1105">
+      <!-- Compile-only: provides Microsoft.Xna.Framework.Color etc. without
+           copying the runtime DLLs into bin/pipeline/ -->
+      <ExcludeAssets>runtime;native;contentFiles</ExcludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="9.0.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
+  </ItemGroup>
+
+  <!-- Files to include in the NuGet package -->
+  <ItemGroup>
+    <!-- Pipeline assembly + its non-MonoGame managed dependencies, bundled together so
+         MGCB can resolve them from the same directory at content-build time. -->
+    <None Include="$(OutputPath)$(AssemblyName).dll"
+          Pack="true" PackagePath="tools/Vulcard.AtlasPacker/" Visible="false" />
+    <None Include="$(OutputPath)SixLabors.ImageSharp.dll"
+          Pack="true" PackagePath="tools/Vulcard.AtlasPacker/" Visible="false" />
+    <None Include="$(OutputPath)Microsoft.Extensions.FileSystemGlobbing.dll"
+          Pack="true" PackagePath="tools/Vulcard.AtlasPacker/" Visible="false" />
+    <!-- MSBuild targets for auto-registration with MonoGame.Content.Builder.Task -->
+    <None Include="build\Vulcard.AtlasPacker.targets" Pack="true" PackagePath="build/" />
+    <!-- Package documentation -->
+    <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="LICENSE" Pack="true" PackagePath="" />
+  </ItemGroup>
+</Project>

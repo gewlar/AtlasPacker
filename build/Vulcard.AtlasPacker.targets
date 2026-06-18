@@ -1,0 +1,25 @@
+<Project>
+
+  <PropertyGroup>
+    <!--
+      Absolute path to the pipeline assembly shipped inside this NuGet package.
+      Consumers can read this property if they need the path for other purposes.
+    -->
+    <VulcardAtlasPacker_AssemblyPath Condition="'$(VulcardAtlasPacker_AssemblyPath)' == ''">$(MSBuildThisFileDirectory)../tools/Vulcard.AtlasPacker/Vulcard.AtlasPacker.dll</VulcardAtlasPacker_AssemblyPath>
+  </PropertyGroup>
+
+  <!--
+    Auto-register the pipeline extension with MonoGame.Content.Builder.Task.
+    Runs after PrepareContentBuilder has initialised MonoGameMGCBAdditionalArguments
+    (which defaults to /quiet) so we append without clobbering it.
+    RunContentBuilder reads MonoGameMGCBAdditionalArguments and passes the value to mgcb.
+  -->
+  <Target Name="Vulcard_AtlasPacker_Register"
+          AfterTargets="PrepareContentBuilder"
+          Condition="Exists('$(VulcardAtlasPacker_AssemblyPath)')">
+    <PropertyGroup>
+      <MonoGameMGCBAdditionalArguments>$(MonoGameMGCBAdditionalArguments) /reference:&quot;$(VulcardAtlasPacker_AssemblyPath)&quot;</MonoGameMGCBAdditionalArguments>
+    </PropertyGroup>
+  </Target>
+
+</Project>
