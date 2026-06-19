@@ -1,6 +1,6 @@
 # Vulcard.AtlasPacker
 
-A MonoGame content pipeline extension that packs sprites into a texture atlas from a plain-text `.atlaspack` manifest.
+A MonoGame content pipeline extension that packs sprites into a texture atlas from a plain-text `.atlaspack` manifest. The output is designed to integrate directly with [MLEM](https://mlem.ellpeck.de/)'s `DataTextureAtlas`, which loads the companion `.atlas` file to give you named `TextureRegion2D` lookups at runtime.
 
 ## Features
 
@@ -91,4 +91,49 @@ loc X Y W H
 
 AnotherSprite
 loc X Y W H
+```
+
+## Using with MLEM's DataTextureAtlas
+
+The `.atlas` file uses the same format as MLEM's [`DataTextureAtlas`](https://mlem.ellpeck.de/api/MLEM.Data.DataTextureAtlas). Load it at runtime with:
+
+```csharp
+using MLEM.Data;
+using MLEM.Textures;
+
+// Load the texture, then hand it to MLEM together with the .atlas file.
+var texture = content.Load<Texture2D>("Sprites/Icons/icons");
+DataTextureAtlas atlas = DataTextureAtlas.LoadAtlasData(
+    new TextureRegion(texture), content, "Sprites/Icons/icons.atlas");
+
+// Look up a region by name (matches the PNG filename without extension).
+TextureRegion region = atlas["iconattack"];
+```
+
+The processor writes a `# format xnb` or `# format png` header at the top of every `.atlas` file. MLEM's parser ignores `#` lines, so the header does not affect loading — it is there for your own loader code to detect which texture type to load. A helper that handles both cases:
+
+```csharp
+public static DataTextureAtlas LoadTextureAtlas(this ContentManager content, string name)
+{
+    string format = "xnb";
+    using (var peek = new StreamReader(TitleContainer.OpenStream(content.RootDirectory + "/" + name + ".atlas")))
+    {
+        var first = peek.ReadLine() ?? "";
+        if (first.StartsWith("# format "))
+            format = first["# format ".Length..].Trim();
+    }
+
+    Texture2D texture;
+    if (format == "png")
+    {
+        using var stream = TitleContainer.OpenStream(content.RootDirectory + "/" + name + ".png");
+        texture = Texture2D.FromStream(Screen.GraphicsDeviceManager.GraphicsDevice, stream).PremultipliedCopy();
+    }
+    else
+    {
+        texture = content.Load<Texture2D>(name);
+    }
+
+    return DataTextureAtlas.LoadAtlasData(new TextureRegion(texture), content, name + ".atlas");
+}
 ```
