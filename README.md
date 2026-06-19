@@ -1,5 +1,7 @@
 # Vulcard.AtlasPacker
 
+[![NuGet](https://img.shields.io/nuget/v/Vulcard.AtlasPacker)](https://www.nuget.org/packages/Vulcard.AtlasPacker)
+
 A MonoGame content pipeline extension that packs sprites into a texture atlas from a plain-text `.atlaspack` manifest. The output is designed to integrate directly with [MLEM](https://mlem.ellpeck.de/)'s `DataTextureAtlas`, which loads the companion `.atlas` file to give you named `TextureRegion2D` lookups at runtime.
 
 ## Features
