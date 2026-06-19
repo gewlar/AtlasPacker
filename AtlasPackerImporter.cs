@@ -112,7 +112,7 @@ public class AtlasPackerImporter : ContentImporter<AtlasPackEntry[]>
     /// a space, contains no path characters (no '.', '/', '\', '*'), and returns the
     /// remaining tokens after the keyword.
     /// </summary>
-    private static bool TryParseGlobalDirective(string line, string keyword, out string[] parts)
+    internal static bool TryParseGlobalDirective(string line, string keyword, out string[] parts)
     {
         parts = [];
         if (line.IndexOfAny(['.', '/', '\\', '*']) >= 0) return false;
@@ -126,7 +126,7 @@ public class AtlasPackerImporter : ContentImporter<AtlasPackEntry[]>
     /// Annotations are recognised by keyword (" size " or " rect ") and may appear in any order.
     /// The remainder — after stripping all recognised annotations — is the glob pattern.
     /// </summary>
-    private static void ParseAnnotations(
+    internal static void ParseAnnotations(
         string line,
         out string glob,
         out Rectangle? sourceRect,
@@ -175,7 +175,7 @@ public class AtlasPackerImporter : ContentImporter<AtlasPackEntry[]>
     // -------------------------------------------------------------------------
 
     /// <summary>Parses "WH" (square) or "W H" into w and h.</summary>
-    private static bool TryParseSize(string[] parts, out int w, out int h)
+    internal static bool TryParseSize(string[] parts, out int w, out int h)
     {
         w = h = 0;
         if (parts.Length == 1 && int.TryParse(parts[0], out int wh)) { w = h = wh; return true; }
@@ -188,7 +188,7 @@ public class AtlasPackerImporter : ContentImporter<AtlasPackEntry[]>
     ///   "offset size"  → (offset, offset, size, size)<br/>
     ///   "X Y W H"      → (X, Y, W, H)
     /// </summary>
-    private static bool TryParseRect(string[] parts, out Rectangle rect)
+    internal static bool TryParseRect(string[] parts, out Rectangle rect)
     {
         rect = default;
         if (parts.Length == 1 && int.TryParse(parts[0], out int size))

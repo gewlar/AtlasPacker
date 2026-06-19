@@ -224,7 +224,7 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
 
     // -------------------------------------------------------------------------
 
-    private static Rectangle? GetTrimBounds(Image<Rgba32> image)
+    internal static Rectangle? GetTrimBounds(Image<Rgba32> image)
     {
         int minX = image.Width, minY = image.Height, maxX = 0, maxY = 0;
         image.ProcessPixelRows(accessor =>
@@ -253,7 +253,7 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
     /// If the source region is larger than the slot it is centre-cropped.
     /// Pixels outside the copied area remain transparent (zero-initialised).
     /// </summary>
-    private static void BlitCentered(
+    internal static void BlitCentered(
         Image<Rgba32> src, Rectangle srcRegion,
         Image<Rgba32> dst, Rectangle dstSlot)
     {
@@ -319,7 +319,7 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
         File.WriteAllText(path, sb.ToString());
     }
 
-    private static int NextPowerOfTwo(int value)
+    internal static int NextPowerOfTwo(int value)
     {
         var p = 1;
         while (p > 0 && p < value) p <<= 1;

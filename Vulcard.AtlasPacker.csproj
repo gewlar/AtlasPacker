@@ -49,6 +49,16 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="AtlasPacker.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>AtlasPacker.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <!-- Files to include in the NuGet package -->
   <ItemGroup>
     <!-- Pipeline assembly + its non-MonoGame managed dependencies, bundled together so
