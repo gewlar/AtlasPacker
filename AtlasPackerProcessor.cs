@@ -61,7 +61,13 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
             else
             {
                 using var image = Image.Load<Rgba32>(item.FilePath);
-                sourceRegion = GetTrimBounds(image);
+                var trimBounds = GetTrimBounds(image);
+                if (trimBounds is null)
+                {
+                    context.Logger.LogWarning(null, null, "Sprite '{0}' is fully transparent; using 1×1 fallback slot.", item.FilePath);
+                    trimBounds = new Rectangle(0, 0, 1, 1);
+                }
+                sourceRegion = trimBounds.Value;
             }
 
             int packedW = item.TargetSize?.W ?? sourceRegion.Width;
@@ -85,7 +91,10 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
         var placements = BinPack(entries);
 
         if (placements.Count == 0)
+        {
+            context.Logger.LogWarning(null, null, "Atlas manifest produced no sprite entries; the output will be an empty texture.");
             return new Texture2DContent();
+        }
 
         int rawW = placements.Max(p => p.Dest.X + p.Dest.Width);
         int rawH = placements.Max(p => p.Dest.Y + p.Dest.Height);
@@ -215,7 +224,7 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
 
     // -------------------------------------------------------------------------
 
-    private static Rectangle GetTrimBounds(Image<Rgba32> image)
+    private static Rectangle? GetTrimBounds(Image<Rgba32> image)
     {
         int minX = image.Width, minY = image.Height, maxX = 0, maxY = 0;
         image.ProcessPixelRows(accessor =>
@@ -235,7 +244,7 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
         });
         return maxX >= minX
             ? new Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1)
-            : new Rectangle(0, 0, 1, 1);
+            : null;
     }
 
     /// <summary>

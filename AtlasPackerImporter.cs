@@ -90,7 +90,10 @@ public class AtlasPackerImporter : ContentImporter<AtlasPackEntry[]>
                 effectiveRect = globalRect;
             }
 
-            foreach (var path in ExpandGlob(dir, glob))
+            var paths = ExpandGlob(dir, glob);
+            if (paths.Length == 0)
+                context.Logger.LogWarning(null, null, "Glob pattern '{0}' matched no files in '{1}'.", glob, dir);
+            foreach (var path in paths)
                 results.Add(new AtlasPackEntry { FilePath = path, SourceRect = effectiveRect, TargetSize = effectiveSize });
         }
 
