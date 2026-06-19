@@ -4,6 +4,7 @@ using System.Text;
 using System.Linq;
 using System.IO;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework.Content.Pipeline;
 using Microsoft.Xna.Framework.Content.Pipeline.Graphics;
 using SixLabors.ImageSharp;
@@ -51,6 +52,10 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
             Rectangle sourceRegion;
             if (item.SourceRect is Rectangle sr)
             {
+                // validate bounds
+                using var img = Image.Load<Rgba32>(item.FilePath);
+                if (sr.Right > img.Width || sr.Bottom > img.Height)
+                    throw new InvalidOperationException($"SourceRect {sr} in '{item.FilePath}' exceeds image bounds {img.Width}x{img.Height}.");
                 sourceRegion = sr;
             }
             else
@@ -90,7 +95,7 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
         // --- Pass 2: composite ---
         // Load each source image individually, blit it into the atlas, then immediately dispose.
         // Only the atlas image and one source image are in memory at any time.
-        var atlasImage = new Image<Rgba32>(atlasWidth, atlasHeight);
+        using var atlasImage = new Image<Rgba32>(atlasWidth, atlasHeight);
         foreach (var placement in placements)
         {
             using var image = Image.Load<Rgba32>(placement.Entry.FilePath);
@@ -105,8 +110,7 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
 
         WriteAtlasFile(Path.Combine(outputDir, baseName + ".atlas"), placements);
 
-        using (atlasImage)
-            return ToTexture2DContent(atlasImage);
+        return ToTexture2DContent(atlasImage);
     }
 
     // -------------------------------------------------------------------------
@@ -178,6 +182,8 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
         if (shouldGrowRight) return GrowRight(ref root, w, h);
         if (shouldGrowDown)  return GrowDown(ref root, w, h);
         if (canGrowRight)    return GrowRight(ref root, w, h);
+        if (!canGrowDown)
+            throw new InvalidOperationException($"Cannot pack sprite {w}x{h} into atlas (current root {root.W}x{root.H}). Consider increasing the atlas size or disabling PowerOfTwo.");
         return GrowDown(ref root, w, h);
     }
 
@@ -271,18 +277,21 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
     private static Texture2DContent ToTexture2DContent(Image<Rgba32> image)
     {
         var bitmap = new PixelBitmapContent<XnaColor>(image.Width, image.Height);
+        var pixels = new XnaColor[image.Width * image.Height];
         image.ProcessPixelRows(accessor =>
         {
             for (int y = 0; y < image.Height; y++)
             {
                 var row = accessor.GetRowSpan(y);
+                int rowOffset = y * image.Width;
                 for (int x = 0; x < image.Width; x++)
                 {
                     var p = row[x];
-                    bitmap.SetPixel(x, y, new XnaColor(p.R, p.G, p.B, p.A));
+                    pixels[rowOffset + x] = XnaColor.FromNonPremultiplied(p.R, p.G, p.B, p.A);
                 }
             }
         });
+        bitmap.SetPixelData(MemoryMarshal.AsBytes(pixels.AsSpan()).ToArray());
         var content = new Texture2DContent();
         content.Faces[0].Add(bitmap);
         return content;
@@ -304,7 +313,8 @@ public class AtlasPackerProcessor : ContentProcessor<AtlasPackEntry[], Texture2D
     private static int NextPowerOfTwo(int value)
     {
         var p = 1;
-        while (p < value) p <<= 1;
+        while (p > 0 && p < value) p <<= 1;
+        if (p <= 0) throw new InvalidOperationException($"Atlas dimension {value} exceeds maximum power-of-two (2^30). Use PowerOfTwo=false or reduce atlas size.");
         return p;
     }
 }

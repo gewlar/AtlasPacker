@@ -29,7 +29,7 @@ add the reference manually to your `.mgcb` file:
 /reference:path/to/Vulcard.AtlasPacker.dll
 ```
 
-The MSBuild property `$(MonoGameAtlasPacker_AssemblyPath)` exposes the exact path
+The MSBuild property `$(VulcardAtlasPacker_AssemblyPath)` exposes the exact path
 after the package is restored.
 
 ## Manifest format

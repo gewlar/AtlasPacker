@@ -43,6 +43,7 @@ public class AtlasPackerImporter : ContentImporter<AtlasPackEntry[]>
 {
     public override AtlasPackEntry[] Import(string filename, ContentImporterContext context)
     {
+        context.AddDependency(filename);
         var dir = Path.GetDirectoryName(filename)!;
         var results = new List<AtlasPackEntry>();
         (int W, int H)? globalSize = null;
@@ -95,7 +96,7 @@ public class AtlasPackerImporter : ContentImporter<AtlasPackEntry[]>
 
         // Deduplicate: the same file can be matched by multiple glob patterns.
         // Keep the first occurrence (and its annotations) to avoid double-packing.
-        var seen = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        var seen = new HashSet<string>(System.StringComparer.Ordinal);
         results.RemoveAll(e => !seen.Add(e.FilePath));
 
         return results.ToArray();
@@ -131,8 +132,14 @@ public class AtlasPackerImporter : ContentImporter<AtlasPackEntry[]>
         sourceRect = null;
         targetSize = null;
 
+        // Only search for annotations in the filename portion (after the last path separator)
+        // to prevent directory names like "button size large" from being consumed as annotations.
+        int lastSep = line.LastIndexOfAny(['/', '\\']);
+        string annotationZone = lastSep >= 0 ? line[(lastSep + 1)..] : line;
+
         // Parse "size ..." annotation — raw value kept; (0, 0) means "explicitly disabled"
-        int sizeIdx = line.LastIndexOf(" size ", System.StringComparison.OrdinalIgnoreCase);
+        int sizeIdx = annotationZone.LastIndexOf(" size ", System.StringComparison.OrdinalIgnoreCase);
+        if (sizeIdx >= 0) sizeIdx += lastSep + 1; // adjust to full-line index
         if (sizeIdx >= 0)
         {
             var parts = line[(sizeIdx + 6)..].Trim().Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
@@ -140,11 +147,15 @@ public class AtlasPackerImporter : ContentImporter<AtlasPackEntry[]>
             {
                 targetSize = (tw, th);
                 line = line[..sizeIdx];
+                // Recompute annotation zone after stripping size annotation
+                lastSep = line.LastIndexOfAny(['/', '\\']);
+                annotationZone = lastSep >= 0 ? line[(lastSep + 1)..] : line;
             }
         }
 
         // Parse "rect ..." annotation (re-search after potentially stripping size)
-        int rectIdx = line.LastIndexOf(" rect ", System.StringComparison.OrdinalIgnoreCase);
+        int rectIdx = annotationZone.LastIndexOf(" rect ", System.StringComparison.OrdinalIgnoreCase);
+        if (rectIdx >= 0) rectIdx += lastSep + 1; // adjust to full-line index
         if (rectIdx >= 0)
         {
             var parts = line[(rectIdx + 6)..].Trim().Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
