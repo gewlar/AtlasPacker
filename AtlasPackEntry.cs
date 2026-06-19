@@ -8,6 +8,8 @@ namespace Vulcard.AtlasPacker;
 /// </summary>
 public readonly record struct AtlasPackEntry
 {
+    public AtlasPackEntry() { }
+
     /// <summary>Absolute path to the source PNG file.</summary>
     public string FilePath { get; init; } = null!;
 
